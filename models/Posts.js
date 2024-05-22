@@ -4,7 +4,9 @@ const postSchema = new mongoose.Schema({
     author:{
         type:mongoose.Schema.Types.ObjectId,
         required:true,
-        ref:'user'
+        ref:'user',
+        foreign_key: "_id",
+        is_list: false,
     },
     caption:{
         type:String,
@@ -30,18 +32,10 @@ const postSchema = new mongoose.Schema({
     ],
     comments:[
         {
-            author:{
-                type:mongoose.Schema.Types.ObjectId,
-                ref:'user'
-            },
-            content:{
-                type:String,
-                required:true
-            },
-            createdAt:{
-                type:Date,
-                default:Date.now()
-            }
+            type:mongoose.Schema.Types.ObjectId,
+            ref:'comments',
+            foreign_key: "_id",
+            is_list: true,
         }
     ]
 },{timestamps:true})

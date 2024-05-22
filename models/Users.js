@@ -41,6 +41,22 @@ const usersSchema = new mongoose.Schema({
             type:mongoose.Schema.Types.ObjectId,
                 ref:'user' 
         }
+    ],
+    posts:[
+        {
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'Posts',
+        foreign_key: "_id",
+        is_list: true,
+       }
+    ],
+    comments:[
+        {
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'comments',
+        foreign_key: "_id",
+        is_list: true,
+      }
     ]
     
 },{timestamps:true})

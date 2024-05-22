@@ -82,7 +82,7 @@ exports.Login=async(req,res,next)=>{
 
              const {password ,...userInfo} = user._doc
           
-             res.status(200).json({user:userInfo,accessToken})
+             res.status(200).json({...userInfo,accessToken})
         })
     })(req,res,next)
 }
@@ -99,3 +99,14 @@ exports.GetMe =async(req,res)=>{
         res.status(500).json(error)
      }
 }
+
+exports.GetUser=async(req,res)=>{
+  const username = req.params.username
+  try {
+    const result = await user.findOne({username},{username:1,bio:1,following:1,followers:1,avatar:1}).populate('posts')
+
+    res.status(200).json(result)
+  } catch (error) {
+    res.status(500).json(error)
+  }
+}  
