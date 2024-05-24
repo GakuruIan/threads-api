@@ -1,5 +1,7 @@
 const mongoose = require('mongoose')
 
+const Comment = require('./Comments')
+
 const postSchema = new mongoose.Schema({
     author:{
         type:mongoose.Schema.Types.ObjectId,
@@ -33,7 +35,7 @@ const postSchema = new mongoose.Schema({
     comments:[
         {
             type:mongoose.Schema.Types.ObjectId,
-            ref:'comments',
+            ref:Comment,
             foreign_key: "_id",
             is_list: true,
         }

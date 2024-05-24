@@ -53,7 +53,7 @@ const usersSchema = new mongoose.Schema({
     comments:[
         {
         type:mongoose.Schema.Types.ObjectId,
-        ref:'comments',
+        ref:'Comment',
         foreign_key: "_id",
         is_list: true,
       }

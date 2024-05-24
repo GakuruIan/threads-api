@@ -102,11 +102,53 @@ exports.GetMe =async(req,res)=>{
 
 exports.GetUser=async(req,res)=>{
   const username = req.params.username
-  try {
-    const result = await user.findOne({username},{username:1,bio:1,following:1,followers:1,avatar:1}).populate('posts')
 
-    res.status(200).json(result)
+  try {
+    const User = await user.findOne({username},{username:1,bio:1,following:1,followers:1,avatar:1}).populate('posts')
+
+    const data={
+        username: User.username,
+        bio: User.bio,
+        following: User.following.length,
+        followers: User.followers.length,
+        avatar: User.avatar,
+        posts: User.posts.length
+    }
+
+    res.status(200).json(data)
   } catch (error) {
     res.status(500).json(error)
   }
 }  
+
+exports.GetUserThreads=async(req,res)=>{
+     const username = req.params.username
+
+     try {
+        const result = await user.findOne({username},{username:1,avatar:1}).populate('posts')
+
+        const data = {
+            author:{
+                username:result.username,
+                avatar:result.avatar
+            },
+            posts:result.posts
+        }
+
+        res.status(200).json(data)
+     } catch (error) {
+         res.status(500).json(error)
+     }
+}
+
+exports.FindUser=async(req,res)=>{
+    const {search} = req.body
+    
+    try {
+        let users = await user.find({ username: { $regex: search, $options: 'i' } },{username:1,avatar:1});
+
+        res.status(200).json(users)
+    } catch (error) {
+         res.status(500).json(error)
+    }
+}
