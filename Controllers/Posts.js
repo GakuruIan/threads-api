@@ -55,10 +55,10 @@ exports.FetchPosts=async(req,res)=>{
 
 exports.FetchPost=async(req,res)=>{
     const postID = req.params.id
-
+    let isFollowing
     try {
       
-      const posts = await Posts.findById(postID).populate('author','username avatar _id')
+      const post = await Posts.findById(postID).populate('author','username avatar _id')
       .populate({
         path: 'comments',
         populate: {
@@ -67,7 +67,14 @@ exports.FetchPost=async(req,res)=>{
         }
       })
 
-      res.status(200).json(posts)
+      if(req.user){
+       
+         const user = await User.findById(req.user.id)
+         
+          isFollowing = user.following.includes(post.author._id)
+       }
+
+      res.status(200).json({post,isFollowing})
     } catch (error) {
       console.log(error)
       res.status(500).json(error)
@@ -107,4 +114,23 @@ exports.CreateComment=async(req,res)=>{
          res.status(500).json(error)
       }
 
+}
+
+exports.LikeThread=async(req,res)=>{
+
+   try {
+    const postID = req.params.id
+    const userID = req.user.id
+
+   await Posts.findOneAndUpdate({_id:postID},
+       {$push:{likes:userID}},
+       {new:true,useFindAndModify:false}
+    ) 
+
+    res.status(200).json({message:"Liked successfully"})
+   } catch (error) {
+
+    console.log(error)
+      res.status(500).json({message:error})
+   }
 }

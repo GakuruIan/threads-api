@@ -20,6 +20,8 @@ router.post('/register',SingleUpload,UserController.Register)
 
 router.post('/login',UserController.Login)
 
+router.post('/logout',UserController.Logout)
+
 router.post("/create/thread",MultipleUpload.array('photos'),PostController.CreatePost)
 
 router.get("/threads",PostController.FetchPosts);
@@ -28,9 +30,15 @@ router.get('/user/:username',VerifyToken,UserController.GetUser);
 
 router.get('/user/:username/threads',VerifyToken,UserController.GetUserThreads)
 
-router.get('/thread/:id',PostController.FetchPost)
+router.get('/thread/:id',VerifyToken,PostController.FetchPost)
 
 router.post('/create/:threadID/comment',VerifyToken,PostController.CreateComment)
 
 router.post('/search',VerifyToken,UserController.FindUser)
+
+router.post('/like/:id',VerifyToken,PostController.LikeThread)
+
+router.post('/follow',VerifyToken,UserController.HandleFollow)
+
+router.post('/unfollow',VerifyToken,UserController.HandleUnFollow)
 module.exports = router

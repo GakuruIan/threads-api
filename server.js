@@ -4,6 +4,7 @@ const mongoose = require('mongoose')
 const session = require('express-session')
 const passport = require('passport')
 const cors = require('cors')
+const MongoStore = require('connect-mongo')
 
 require('./Utils/passport')(passport)
 require('dotenv').config()
@@ -24,7 +25,17 @@ mongoose.connect(process.env.LOCAL_CONNECTION_STRING)
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 
-app.use(session({secret:'secret',resave:true,saveUninitialized:true}))
+app.use(session({
+    secret:'secret',
+    resave:false,
+    saveUninitialized:false,
+    store:MongoStore.create({
+        mongoUrl:process.env.LOCAL_CONNECTION_STRING,
+        ttl: 14 * 24 * 60 * 60 // session is stored for 14 days
+    }),
+    cookie: { maxAge: 1000 * 60 * 60 * 24 }  // for 1 day
+})
+)
 
 // passport
 app.use(passport.initialize())

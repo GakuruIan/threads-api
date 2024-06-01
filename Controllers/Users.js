@@ -66,7 +66,7 @@ exports.Register =async(req,res)=>{
 
 exports.Login=async(req,res,next)=>{
 
-    passport.authenticate('local',{session:false},(err,user,info)=>{
+    passport.authenticate('local',(err,user,info)=>{
         if(err){
            return res.status(500).json({message:"Internal Server Error"})
         }
@@ -74,6 +74,8 @@ exports.Login=async(req,res,next)=>{
         if(!user){
            return res.status(401).json({message:info.message})
         }
+        
+        req.session.userId =user._id
 
         jwt.sign({id:user._id},'secret',(err,accessToken)=>{
             if(err){
@@ -85,6 +87,22 @@ exports.Login=async(req,res,next)=>{
              res.status(200).json({...userInfo,accessToken})
         })
     })(req,res,next)
+}
+
+exports.Logout=async(req,res)=>{
+    req.logout(function(err) {
+        if (err) { return next(err); }
+
+        req.session.destroy(err => {
+            if (err) {
+              return res.status(500).json({ message: 'Logout failed. Please try again.' });
+            }
+            
+            // Clear the session cookie
+            res.clearCookie('connect.sid'); // The cookie name might differ based on your configuration
+            res.status(200).json({ message: 'Logout successful.' });
+          });
+      });
 }
 
 exports.GetMe =async(req,res)=>{
@@ -104,9 +122,10 @@ exports.GetUser=async(req,res)=>{
   const username = req.params.username
 
   try {
-    const User = await user.findOne({username},{username:1,bio:1,following:1,followers:1,avatar:1}).populate('posts')
+    const User = await user.findOne({username},{_id:1,username:1,bio:1,following:1,followers:1,avatar:1}).populate('posts')
 
     const data={
+        _id:User._id,
         username: User.username,
         bio: User.bio,
         following: User.following.length,
@@ -150,5 +169,48 @@ exports.FindUser=async(req,res)=>{
         res.status(200).json(users)
     } catch (error) {
          res.status(500).json(error)
+    }
+}
+
+exports.HandleFollow=async(req,res)=>{
+    const {theOnebeingFollowed} = req.body
+
+    const theOneFollowing = req.user.id
+
+     try {
+        await user.findOneAndUpdate({_id:theOnebeingFollowed},
+          {$push:{followers:theOneFollowing}},
+          {new: true, useFindAndModify: false}   
+        )
+
+        await user.findOneAndUpdate({_id:theOneFollowing},
+            {$push:{following:theOnebeingFollowed}},
+            {new: true, useFindAndModify: false}   
+          )
+        
+          res.status(200).json({message:"success"})
+     } catch (error) {
+        res.status(500).json(error)
+     }
+}
+
+exports.HandleUnFollow=async(req,res)=>{
+    const {theOnebeingUnFollowed} = req.body
+    
+    const theOneFollowing = req.user.id
+    try {
+
+        await user.findOneAndUpdate({_id:theOnebeingUnFollowed},
+            {$pull:{followers:theOneFollowing}},
+            {new: true, useFindAndModify: false}   
+          )
+
+          await user.findOneAndUpdate({_id:theOneFollowing},
+            {$pull:{following:theOnebeingUnFollowed}},
+            {new: true, useFindAndModify: false}   
+          )
+          res.status(200).json({message:"success"})
+    } catch (error) {
+        res.status(500).json(error)
     }
 }
