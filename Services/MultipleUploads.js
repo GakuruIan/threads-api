@@ -6,9 +6,9 @@ const multer = require('multer')
 const storage = new CloudinaryStorage({
     cloudinary:Cloudinary,
     params:{
-        folder:"Threads",
+        folder:`Threads`,
         allowed_formats: ['jpg', 'png','jpeg'],
-    }
+    } 
 })
 
 const upload = multer({storage:storage})

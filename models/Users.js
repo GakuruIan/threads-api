@@ -21,7 +21,6 @@ const usersSchema = new mongoose.Schema({
     avatar:{
         public_id:{
             type:String,
-           
           },
           url:{
               type:String,
@@ -39,7 +38,7 @@ const usersSchema = new mongoose.Schema({
     followers:[
         {
             type:mongoose.Schema.Types.ObjectId,
-                ref:'user' 
+            ref:'user' 
         }
     ],
     posts:[
@@ -60,5 +59,18 @@ const usersSchema = new mongoose.Schema({
     ]
     
 },{timestamps:true})
+
+// remove 
+usersSchema.pre('deleteOne',async function(next){
+    try {
+        const userID = this._id
+
+        await mongoose.model('Posts').deleteMany({ author: userID });
+        await mongoose.model('Comment').deleteMany({ author: userID });
+        next()
+    } catch (error) {
+        next(error)
+    }
+})
 
 module.exports = mongoose.model("user",usersSchema)

@@ -19,7 +19,7 @@ exports.Register =async(req,res)=>{
 
         try {
             result = await Cloudinary.uploader.upload(image,{
-                folder:"Profile"
+                folder:`Profile/${username}`
             })
 
         } catch (error) {
@@ -99,7 +99,7 @@ exports.Logout=async(req,res)=>{
             }
             
             // Clear the session cookie
-            res.clearCookie('connect.sid'); // The cookie name might differ based on your configuration
+            res.clearCookie('connect.sid'); 
             res.status(200).json({ message: 'Logout successful.' });
           });
       });
@@ -122,10 +122,11 @@ exports.GetUser=async(req,res)=>{
   const username = req.params.username
 
   try {
-    const User = await user.findOne({username},{_id:1,username:1,bio:1,following:1,followers:1,avatar:1}).populate('posts')
+    const User = await user.findOne({username},{_id:1,email:1,username:1,bio:1,following:1,followers:1,avatar:1}).populate('posts')
 
     const data={
         _id:User._id,
+        email:User.email,
         username: User.username,
         bio: User.bio,
         following: User.following.length,
@@ -213,4 +214,79 @@ exports.HandleUnFollow=async(req,res)=>{
     } catch (error) {
         res.status(500).json(error)
     }
+}
+
+exports.UpdateProfile=async(req,res)=>{
+    const ID = req.user.id
+
+    const {email,username,bio,currentImage} = req.body
+
+    let newImage
+    
+      try {
+
+        if(req.file){
+            if(currentImage.public_id){
+                await Cloudinary.uploader.destroy(currentImage.public_id)
+               }
+        
+               const image_parser=parser.format(path.extname(req.file.originalname).toString(),req.file.buffer);
+               const image = image_parser.content;
+    
+               newImage = await Cloudinary.uploader.upload(image,{
+                 folder:"Profile"
+               })
+        }
+
+        const updateData = {
+            email,
+            username,
+            bio,
+        }
+
+        if(newImage){
+            updateData.avatar = {
+                public_id:newImage.public_id,
+                url:newImage.url,
+                folder:newImage.folder
+            }
+        }
+
+        const updatedUser = await user.findOneAndUpdate({_id:ID},updateData,{ new: true })
+       
+        res.status(200).json({ message: "User updated successfully",user:updatedUser });
+      } 
+      catch (error) {
+          res.status(500).json(error)
+      }
+    
+}
+
+exports.HandleDelete=async(req,res)=>{
+     const ID = req.user.id
+
+     try {
+        const User = await user.findById(ID)
+
+        await Cloudinary.api.delete_resources_by_prefix(`Profile/${User.username}`)
+
+        await Cloudinary.api.delete_resources_by_prefix(`Threads/${User.username}`)
+
+         if(!User){
+            res.status(404).json({message:'No user found'})
+         }
+
+         await Cloudinary.api.delete_folder(`Profile/${User.username}`)
+
+         await User.deleteOne()
+
+         this.Logout(req,res)
+
+         res.status(200).json({message:'Account deleted successfully!!'})
+     } catch (error) {
+
+        console.log(error)
+         res.status(500).json(error)
+     }
+    
 }

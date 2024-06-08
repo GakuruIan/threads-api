@@ -20,6 +20,10 @@ router.post('/register',SingleUpload,UserController.Register)
 
 router.post('/login',UserController.Login)
 
+router.put('/update',SingleUpload,VerifyToken,UserController.UpdateProfile)
+
+router.delete('/delete/user',VerifyToken,UserController.HandleDelete)
+
 router.post('/logout',UserController.Logout)
 
 router.post("/create/thread",MultipleUpload.array('photos'),PostController.CreatePost)
