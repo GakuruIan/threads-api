@@ -145,12 +145,13 @@ exports.GetUserThreads=async(req,res)=>{
      const username = req.params.username
 
      try {
-        const result = await user.findOne({username},{username:1,avatar:1}).populate('posts')
+        const result = await user.findOne({username},{_id:1,username:1,avatar:1}).populate('posts')
 
         const data = {
             author:{
                 username:result.username,
-                avatar:result.avatar
+                avatar:result.avatar,
+                _id:result._id
             },
             posts:result.posts
         }

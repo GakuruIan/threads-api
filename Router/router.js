@@ -28,7 +28,9 @@ router.post('/logout',UserController.Logout)
 
 router.post("/create/thread",MultipleUpload.array('photos'),PostController.CreatePost)
 
-router.get("/threads",PostController.FetchPosts);
+router.delete('/delete/:id',VerifyToken,PostController.DeleteThread)
+
+router.get("/threads",VerifyToken,PostController.FetchPosts);
 
 router.get('/user/:username',VerifyToken,UserController.GetUser);
 
@@ -41,6 +43,8 @@ router.post('/create/:threadID/comment',VerifyToken,PostController.CreateComment
 router.post('/search',VerifyToken,UserController.FindUser)
 
 router.post('/like/:id',VerifyToken,PostController.LikeThread)
+
+router.post('/unlike/:id',VerifyToken,PostController.UnlikeThread)
 
 router.post('/follow',VerifyToken,UserController.HandleFollow)
 

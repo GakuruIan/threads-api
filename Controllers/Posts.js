@@ -1,6 +1,7 @@
 const Posts = require('./../models/Posts')
 const User = require('./../models/Users')
 const Comment = require('./../models/Comments')
+const cloudinary = require('./../Services/Cloudinary')
 
 // creating thread post
 exports.CreatePost =async(req,res)=>{
@@ -9,14 +10,16 @@ exports.CreatePost =async(req,res)=>{
    let uploaded_photos = []
 
    if(req.files){
-       for (let file in req.files){
-            let photo = new Object()
 
-            photo.filename = req.files[file].filename
-            photo.path =req.files[file].path
+      req.files.forEach((file) => {
+        let photo = {
+            filename: file.originalname,
+            path: file.path,
+            public_id: file.filename, 
+        };
 
-            uploaded_photos.push(photo)
-       }
+        uploaded_photos.push(photo);
+    });
    }
 
 
@@ -41,15 +44,65 @@ exports.CreatePost =async(req,res)=>{
    }
 }
 
-exports.FetchPosts=async(req,res)=>{
-   
-  try {
-    let posts = await Posts.find().populate('author','username avatar _id')
+exports.DeleteThread=async(req,res)=>{
+   const postID = req.params.id
+
+   try {
+      const post = await Posts.findById(postID)
+
+      if(!post){
+        res.status(404).json({message:"Post not found"})
+      }
+
+     const deletePhotos = post.photos.map((photo)=>{
+        return cloudinary.uploader.destroy(photo.public_id) 
+      })
      
-    res.status(200).json(posts)
+      await Promise.all(deletePhotos)
+
+      await post.deleteOne()
+
+      res.status(200).json({message:"Post deleted successfully"})
+   } catch (error) {
+      res.status(200).json(error)
+   }
+}
+
+exports.FetchPosts=async(req,res)=>{
+   const userID = req.user.id
+
+   console.log(req.query)
+   
+   const page = parseInt(req.query.page) || 1;
+   const limit = parseInt(req.query.limit) || 15;
+   const skip = (page - 1) * limit;
+
+  try {
+    let posts = await Posts.find()
+    .sort({createdAt:-1})
+    .skip(skip)
+    .limit(limit)
+    .populate('author','username avatar _id')
+    .lean()
+
+    const totalPosts = await Posts.countDocuments();
+
+
+    posts.forEach(post => {
+      post.isLikedByCurrentUser = post.likes.map(id => id.toString()).includes(userID);
+    });
+    
+
+
+    res.status(200).json(
+      {
+        posts,
+        totalPages: Math.ceil(totalPosts / limit)
+    })
   }
   catch(err){
     res.status(500).json(err)
+    console.log(err)
   }
 }
 
@@ -122,10 +175,16 @@ exports.LikeThread=async(req,res)=>{
     const postID = req.params.id
     const userID = req.user.id
 
-   await Posts.findOneAndUpdate({_id:postID},
-       {$push:{likes:userID}},
+   const post = await Posts.findOneAndUpdate({_id:postID},
+       {$addToSet:{likes:userID}},
        {new:true,useFindAndModify:false}
     ) 
+
+    const likesCount = post.likes.length;
+
+    post.likesCount = likesCount;
+
+    await post.save();
 
     res.status(200).json({message:"Liked successfully"})
    } catch (error) {
@@ -133,4 +192,26 @@ exports.LikeThread=async(req,res)=>{
     console.log(error)
       res.status(500).json({message:error})
    }
+}
+
+exports.UnlikeThread=async(req,res)=>{
+    try {
+      const postID = req.params.id
+      const userID = req.user.id
+
+      const post=await Posts.findByIdAndUpdate({_id:postID},
+        {$pull:{likes:userID}},
+        {new:true}
+      )
+
+      const likesCount = post.likes.length;
+
+      post.likesCount = likesCount;
+
+     await post.save();
+
+      res.status(200).json({message:"Like removed"})
+    } catch (error) {
+        res.status(500).json({message:error})
+    }
 }
