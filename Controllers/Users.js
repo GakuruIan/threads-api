@@ -83,8 +83,10 @@ exports.Login=async(req,res,next)=>{
              }
 
              const {password ,...userInfo} = user._doc
+
+             const {username,_id,email,bio,createdAt,updatedAt,avatar} = userInfo
           
-             res.status(200).json({...userInfo,accessToken})
+             res.status(200).json({username,_id,email,bio,createdAt,updatedAt,avatar,accessToken})
         })
     })(req,res,next)
 }

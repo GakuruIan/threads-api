@@ -1,14 +1,16 @@
 const express = require('express')
 
-const router = express.Router()
-
 const UserController = require('../Controllers/Users')
 const PostController = require('../Controllers/Posts')
+const NotificationController = require('../Controllers/Notification')
 
 const SingleUpload = require('../Services/SingleUpload')
 const MultipleUpload = require('../Services/MultipleUploads')
 
 const VerifyToken = require('../middleware/Auth')
+
+module.exports =(io)=>{
+     const router = express.Router()
 
 router.get('/',(req,res)=>{
      res.json({"message":"main page"})
@@ -49,4 +51,10 @@ router.post('/unlike/:id',VerifyToken,PostController.UnlikeThread)
 router.post('/follow',VerifyToken,UserController.HandleFollow)
 
 router.post('/unfollow',VerifyToken,UserController.HandleUnFollow)
-module.exports = router
+
+router.get('/notifications',VerifyToken,NotificationController.GetNotifications)
+
+router.put('/notification/:id/update',VerifyToken,NotificationController.UpdateNotification)
+
+return router
+}

@@ -1,17 +1,25 @@
 const express = require('express')
+const http = require('http');
 const router = require('./Router/router')
 const mongoose = require('mongoose')
 const session = require('express-session')
 const passport = require('passport')
 const cors = require('cors')
-const MongoStore = require('connect-mongo')
+const MongoStore = require('connect-mongo');
+
+const {init:initialize,getIo} = require('./Utils/Socket')
 
 require('./Utils/passport')(passport)
 require('dotenv').config()
+
 const app =express()
+
+const server = http.createServer(app);
+const io = initialize(server)
 
 const PORT =  process.env.PORT || 5000
 
+let Connectedusers = {}
 
 mongoose.connect(process.env.LOCAL_CONNECTION_STRING)
 .then(()=>{
@@ -20,6 +28,26 @@ mongoose.connect(process.env.LOCAL_CONNECTION_STRING)
 .catch((err)=>{
     console.log(err)
 })
+
+// io.on('connection',(socket)=>{
+//     console.log("user connected")
+
+//     socket.on('userConnected', (userId) => {
+//         Connectedusers[userId] = socket.id;
+
+//         console.log(Connectedusers)
+//       });
+    
+//       socket.on('disconnect', () => {
+//         for (let userId in Connectedusers) {
+//           if (Connectedusers[userId] === socket.id) {
+//             delete Connectedusers[userId];
+//             break;
+//           }
+//         }
+//         console.log('A user disconnected');
+//       });
+// })
 
 // body parser
 app.use(express.json())
@@ -45,11 +73,11 @@ app.use(passport.session())
 app.use(cors({
     origin:'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
-    allowedHeaders: ['Content-Type','Origin', 'X-Requested-With', 'Accept', 'x-client-key', 'x-client-token', 'x-client-secret', 'Authorization'],
+    allowedHeaders: ['Content-Type','Origin', 'X-Requested-With', 'Accept', 'x-client-key', 'x-client-token', 'x-client-secret', 'Authorization','Access-Control-Allow-Origin'],
     credentials:true
 }));
 
-app.use(router)
+app.use(router(io))
 
-app.listen(PORT,()=>console.log(`server started at http://localhost:${PORT}`))
+server.listen(PORT,()=>console.log(`server started at http://localhost:${PORT}`))
 

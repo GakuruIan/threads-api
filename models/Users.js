@@ -56,6 +56,14 @@ const usersSchema = new mongoose.Schema({
         foreign_key: "_id",
         is_list: true,
       }
+    ],
+    notifications:[
+        {
+            type:mongoose.Schema.Types.ObjectId,
+            ref:'Notification',
+            foreign_key: "_id",
+            is_list: true,
+        }
     ]
     
 },{timestamps:true})

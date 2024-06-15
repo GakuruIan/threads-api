@@ -1,7 +1,10 @@
 const Posts = require('./../models/Posts')
 const User = require('./../models/Users')
 const Comment = require('./../models/Comments')
+
 const cloudinary = require('./../Services/Cloudinary')
+
+const Notify = require('../Utils/NotifyUser')
 
 // creating thread post
 exports.CreatePost =async(req,res)=>{
@@ -70,8 +73,6 @@ exports.DeleteThread=async(req,res)=>{
 
 exports.FetchPosts=async(req,res)=>{
    const userID = req.user.id
-
-   console.log(req.query)
    
    const page = parseInt(req.query.page) || 1;
    const limit = parseInt(req.query.limit) || 15;
@@ -137,7 +138,7 @@ exports.FetchPost=async(req,res)=>{
 
 exports.CreateComment=async(req,res)=>{
       const postID = req.params.threadID
-      const {comment,author} = req.body
+      const {comment,author,ownerOfPost} = req.body
 
       try {
 
@@ -158,6 +159,10 @@ exports.CreateComment=async(req,res)=>{
           {$push:{comments:newComment._id}},
           {new: true, useFindAndModify: false}
          )
+
+         if(ownerOfPost !== author){
+           Notify.NotifyUser(ownerOfPost,author,"Commented on your post",postID,'newComment')
+         }
      
         res.status(200).json({message:"Comment Added Successfully"})
       } 
@@ -170,9 +175,10 @@ exports.CreateComment=async(req,res)=>{
 }
 
 exports.LikeThread=async(req,res)=>{
-
+       
    try {
     const postID = req.params.id
+    const UserToNotify = req.body.user
     const userID = req.user.id
 
    const post = await Posts.findOneAndUpdate({_id:postID},
@@ -185,6 +191,10 @@ exports.LikeThread=async(req,res)=>{
     post.likesCount = likesCount;
 
     await post.save();
+
+    if(UserToNotify !== userID){
+      Notify.NotifyUser(UserToNotify,userID,"Liked your post",postID,"newNotification")
+    }
 
     res.status(200).json({message:"Liked successfully"})
    } catch (error) {
