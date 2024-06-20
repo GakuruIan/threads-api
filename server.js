@@ -29,25 +29,6 @@ mongoose.connect(process.env.LOCAL_CONNECTION_STRING)
     console.log(err)
 })
 
-// io.on('connection',(socket)=>{
-//     console.log("user connected")
-
-//     socket.on('userConnected', (userId) => {
-//         Connectedusers[userId] = socket.id;
-
-//         console.log(Connectedusers)
-//       });
-    
-//       socket.on('disconnect', () => {
-//         for (let userId in Connectedusers) {
-//           if (Connectedusers[userId] === socket.id) {
-//             delete Connectedusers[userId];
-//             break;
-//           }
-//         }
-//         console.log('A user disconnected');
-//       });
-// })
 
 // body parser
 app.use(express.json())

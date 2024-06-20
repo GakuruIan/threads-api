@@ -56,5 +56,10 @@ router.get('/notifications',VerifyToken,NotificationController.GetNotifications)
 
 router.put('/notification/:id/update',VerifyToken,NotificationController.UpdateNotification)
 
+router.post('/reset-link',UserController.SendResetLink)
+
+router.get('/verify-reset-token',UserController.VerifyResetToken)
+
+router.put('/change-password',UserController.UpdatePassword)
 return router
 }

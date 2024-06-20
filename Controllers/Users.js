@@ -3,6 +3,9 @@ const user = require('../models/Users')
 const path = require('path')
 const passport = require('passport')
 const jwt = require('jsonwebtoken')
+const ResetTokens = require('../models/ResetTokens')
+
+const Transporter = require('../Utils/MailTransporter')
 
 const Cloudinary = require('../Services/Cloudinary')
 const DatauriParser = require('datauri/parser');
@@ -75,11 +78,11 @@ exports.Login=async(req,res,next)=>{
            return res.status(401).json({message:info.message})
         }
         
-        req.session.userId =user._id
+        req.session.userId = user._id
 
         jwt.sign({id:user._id},'secret',(err,accessToken)=>{
             if(err){
-                res.status(401).json({message:"Failed Login",accessToken:null})
+               return res.status(401).json({message:"Failed Login",accessToken:null})
              }
 
              const {password ,...userInfo} = user._doc
@@ -292,4 +295,109 @@ exports.HandleDelete=async(req,res)=>{
          res.status(500).json(error)
      }
     
+}
+
+exports.SendResetLink=async(req,res)=>{
+    const {email} = req.body
+
+    try {
+        const User = await user.findOne({email})
+
+        if(!User){
+           return res.status(404).json({message:"Email doesn't exist"})
+        }
+
+        const token = jwt.sign({email:User.email},'secret',{expiresIn:'1h'})
+
+        const expiresAt = new Date()
+        expiresAt.setHours(expiresAt.getHours()+1);
+
+        const resetToken = new ResetTokens({
+            email,
+            token,
+            expiresAt
+        })
+
+        await resetToken.save()
+
+        await Transporter.sendMail({
+            from: process.env.GOOGLE_EMAIL, 
+            to: email, 
+            subject: "Password Reset Request for Your Social Media App Account", 
+            text: `We received a request to reset the password for your Social Media App account associated with this email address. If you made this request, you can reset your password by clicking the link below:
+
+            http://localhost:5173/change-password?token=${token}
+            
+            If the above link doesn't work, please copy and paste the following URL into your browser's address bar:
+            
+            http://localhost:5173/change-password?token=${token}
+            
+            For security reasons, this link will expire in 24 hours. If you did not request a password reset, please disregard this email. Your account will remain secure, and no changes will be made.
+            
+            If you have any questions or need further assistance, please don't hesitate to contact our support team at [Support Email].
+            
+            Thank you for using Social Media App!
+            
+            Best regards,
+            The Social Media App Team`, 
+
+           
+          });
+
+
+          res.status(200).json({message:"Reset Link sent to your email"})
+
+    } catch (error) {
+        res.status(500).json(error)
+
+        console.log(error);
+    }
+}
+
+exports.VerifyResetToken=async(req,res)=>{
+     const {token} = req.query
+      try {
+        const decode = jwt.verify(token,'secret')
+
+        if(!decode){
+            return res.status(401).json({message:"Invalid token"})
+        }
+
+        const resetToken = await ResetTokens.findOne({ token });
+
+        if (resetToken) {
+            const email = resetToken.email
+         await ResetTokens.deleteOne({ token });
+          res.status(200).json({email,valid:true})
+        } else {
+            res.status(401).json({valid:false})
+        }
+        
+      } catch (error) {
+        res.status(500).json(error)
+      }
+}
+
+exports.UpdatePassword=async(req,res)=>{
+
+    const{email,password} = req.body
+
+    try {
+        const User =await user.findOne({email})
+
+        if(!User){
+            return res.status(404).json({message:"User not found"})
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(password, salt);
+
+        User.password = hash
+
+        await User.save()
+
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.statu(500).json(error)
+    }
 }
