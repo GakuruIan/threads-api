@@ -112,7 +112,8 @@ exports.FetchPost=async(req,res)=>{
     let isFollowing
     try {
       
-      const post = await Posts.findById(postID).populate('author','username avatar _id')
+      let post = await Posts.findById(postID)
+      .populate('author','username avatar _id')
       .populate({
         path: 'comments',
         populate: {
@@ -120,14 +121,15 @@ exports.FetchPost=async(req,res)=>{
           select: 'username avatar _id' 
         }
       })
+      .lean()
 
       if(req.user){
-       
-         const user = await User.findById(req.user.id)
-         
+          const user = await User.findById(req.user.id)
           isFollowing = user.following.includes(post.author._id)
        }
 
+       post.isLikedByCurrentUser = post.likes.map(id => id.toString()).includes(req.user.id);
+       
       res.status(200).json({post,isFollowing})
     } catch (error) {
       console.log(error)
@@ -174,54 +176,4 @@ exports.CreateComment=async(req,res)=>{
 
 }
 
-exports.LikeThread=async(req,res)=>{
-       
-   try {
-    const postID = req.params.id
-    const UserToNotify = req.body.user
-    const userID = req.user.id
 
-   const post = await Posts.findOneAndUpdate({_id:postID},
-       {$addToSet:{likes:userID}},
-       {new:true,useFindAndModify:false}
-    ) 
-
-    const likesCount = post.likes.length;
-
-    post.likesCount = likesCount;
-
-    await post.save();
-
-    if(UserToNotify !== userID){
-      Notify.NotifyUser(UserToNotify,userID,"Liked your post",postID,"newNotification")
-    }
-
-    res.status(200).json({message:"Liked successfully"})
-   } catch (error) {
-
-    console.log(error)
-      res.status(500).json({message:error})
-   }
-}
-
-exports.UnlikeThread=async(req,res)=>{
-    try {
-      const postID = req.params.id
-      const userID = req.user.id
-
-      const post=await Posts.findByIdAndUpdate({_id:postID},
-        {$pull:{likes:userID}},
-        {new:true}
-      )
-
-      const likesCount = post.likes.length;
-
-      post.likesCount = likesCount;
-
-     await post.save();
-
-      res.status(200).json({message:"Like removed"})
-    } catch (error) {
-        res.status(500).json({message:error})
-    }
-}

@@ -44,10 +44,6 @@ router.post('/create/:threadID/comment',VerifyToken,PostController.CreateComment
 
 router.post('/search',VerifyToken,UserController.FindUser)
 
-router.post('/like/:id',VerifyToken,PostController.LikeThread)
-
-router.post('/unlike/:id',VerifyToken,PostController.UnlikeThread)
-
 router.post('/follow',VerifyToken,UserController.HandleFollow)
 
 router.post('/unfollow',VerifyToken,UserController.HandleUnFollow)

@@ -19,8 +19,6 @@ const io = initialize(server)
 
 const PORT =  process.env.PORT || 5000
 
-let Connectedusers = {}
-
 mongoose.connect(process.env.LOCAL_CONNECTION_STRING)
 .then(()=>{
     console.log("database is connected successfully")
@@ -28,6 +26,8 @@ mongoose.connect(process.env.LOCAL_CONNECTION_STRING)
 .catch((err)=>{
     console.log(err)
 })
+
+
 
 
 // body parser

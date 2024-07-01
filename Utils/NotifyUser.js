@@ -7,7 +7,9 @@ exports.NotifyUser=async(UserToNotify,notifier,message,postID,type)=>{
     const io = getIo()
     const Connectedusers = getConnectedUser()
     
+    
     const  notification = new Notification({UserToNotify,notifier,message,post:postID})
+    
     try {
         const savedNotification = await notification.save()
 
@@ -20,6 +22,8 @@ exports.NotifyUser=async(UserToNotify,notifier,message,postID,type)=>{
 
             const notification = await Notification.findById(savedNotification._id,{message:1})
             .populate('notifier','username  _id')
+
+           
 
             if(type === 'newNotification'){
                 io.to(Connectedusers[UserToNotify]).emit(type,notification)
